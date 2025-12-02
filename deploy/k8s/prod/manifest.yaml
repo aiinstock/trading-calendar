@@ -34,14 +34,12 @@ spec:
     spec:
       containers:
       - name: trading-calendar
-        image: aiinstock/trading-calendar:latest
+        image: ${IMAGE}
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: http
         env:
-        - name: TZ
-          value: "Asia/Shanghai"
         - name: RATE_LIMIT
           value: "50000"
         - name: MAX_DAYS
