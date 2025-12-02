@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: trading-calendar
+  namespace: aiinstock
+  labels:
+    app: trading-calendar
+spec:
+  type: ClusterIP
+  selector:
+    app: trading-calendar
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-calendar
+  namespace: aiinstock
+  labels:
+    app: trading-calendar
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: trading-calendar
+  template:
+    metadata:
+      labels:
+        app: trading-calendar
+    spec:
+      containers:
+      - name: trading-calendar
+        image: aiinstock/trading-calendar:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: TZ
+          value: "Asia/Shanghai"
+        - name: RATE_LIMIT
+          value: "50000"
+        - name: MAX_DAYS
+          value: "366"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        # 启动加载所有交易所日历需要约1分钟
+        readinessProbe:
+          httpGet:
+            path: /api/v1/version
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/v1/version
+            port: 8000
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /api/v1/version
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 12  # 最多等待 30 + 12*10 = 150 秒
+      restartPolicy: Always

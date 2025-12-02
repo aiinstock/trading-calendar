@@ -13,7 +13,9 @@ USER 1001
 
 COPY ./trading_calendar /code/trading_calendar
 
-CMD ["uvicorn", "trading_calendar.main:app", "--host", "0.0.0.0", "--port", "80"]
+EXPOSE 8000
+
+CMD ["uvicorn", "trading_calendar.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # If running behind a proxy like Nginx or Traefik add --proxy-headers
-# CMD ["uvicorn", "trading_calendar.main:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers"]
+# CMD ["uvicorn", "trading_calendar.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
