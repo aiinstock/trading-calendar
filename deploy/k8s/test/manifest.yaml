@@ -76,4 +76,6 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 12  # 最多等待 30 + 12*10 = 150 秒
+      imagePullSecrets:
+        - name: aliyun-registry-secret
       restartPolicy: Always
