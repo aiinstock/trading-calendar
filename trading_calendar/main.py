@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Depends, Request, Response, Query, HTTPException
+from fastapi import FastAPI, APIRouter, Depends, Request, Response, Query, HTTPException
 from typing import Optional, List
 from enum import Enum
 from fastapi.encoders import jsonable_encoder
@@ -77,6 +77,10 @@ async def lifespan(app: FastAPI):
 description = """
 Trading calendar REST API with holiday, late open, and early close. Over 50 unique exchange calendars for global equity and futures markets.
 """
+
+# Context path prefix - similar to Java's server.servlet.context-path
+CONTEXT_PATH = os.environ.get('CONTEXT_PATH', '/cal')
+
 limiter = Limiter(key_func=get_remote_address, headers_enabled=True, enabled='RATE_LIMIT' in os.environ)
 app = FastAPI(
     title="Trading Calendar",
@@ -91,7 +95,10 @@ app = FastAPI(
         "name": "MIT License",
         "url": "https://raw.githubusercontent.com/apptastic-software/trading-calendar/main/LICENSE",
     },
-    openapi_tags=tags_metadata, openapi_url="/api/v1/openapi.json",
+    openapi_tags=tags_metadata,
+    openapi_url=f"{CONTEXT_PATH}/api/v1/openapi.json",
+    docs_url=f"{CONTEXT_PATH}/docs",
+    redoc_url=f"{CONTEXT_PATH}/redoc",
     lifespan=lifespan
 )
 app.state.limiter = limiter
@@ -105,6 +112,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+router = APIRouter(prefix=CONTEXT_PATH)
 
 class Status(str, Enum):
     OPEN = 'Open'
@@ -466,7 +475,7 @@ def get_markets_etag(mic):
     return "markets_" + version() + mic_str
 
 
-@app.get("/api/v1/markets", response_model=List[MarketResponse], tags=['Markets'])
+@router.get("/api/v1/markets", response_model=List[MarketResponse], tags=['Markets'])
 @limiter.limit(rate_limit)
 def get_markets(request: Request,
                 mic: str = Query(None, title="MIC code", description="Optional list of comma separated MIC codes for which market to show data for. All market will be included if MIC code is not specified.", example="XNYS")):
@@ -493,7 +502,7 @@ def get_markets(request: Request,
     return response
 
 
-@app.get("/api/v1/markets/status", response_model=List[MarketStatusResponse], tags=['Market Status'])
+@router.get("/api/v1/markets/status", response_model=List[MarketStatusResponse], tags=['Market Status'])
 @limiter.limit(rate_limit)
 def get_market_status(request: Request,
                       mic: str = Query(None, title="MIC code", description="Optional list of comma separated MIC codes for which market to show data for. All market will be included if MIC code is not specified.", example="XNYS")):
@@ -513,7 +522,7 @@ def get_trading_hours_etag(mic, start, end):
     end_str = str(end.strftime("%Y%m%d"))
     return "hours_" + version() + mic_str + start_str + end_str
 
-@app.get("/api/v1/markets/hours", response_model=List[TradingHoursResponse], tags=['Trading Hours'])
+@router.get("/api/v1/markets/hours", response_model=List[TradingHoursResponse], tags=['Trading Hours'])
 @limiter.limit(rate_limit)
 def get_trading_hours(request: Request,
                       mic: str = Query(None, title="MIC code", description="Optional list of comma separated MIC codes for which market to show data for. All market will be included if MIC code is not specified.", example="XNYS"),
@@ -549,7 +558,7 @@ def get_market_holidays_etag(mic, start, end):
     end_str = str(end.strftime("%Y%m%d"))
     return "holidays_" + version() + mic_str + start_str + end_str
 
-@app.get("/api/v1/markets/holidays", response_model=List[MarketHolidayResponse], tags=['Market Holidays'])
+@router.get("/api/v1/markets/holidays", response_model=List[MarketHolidayResponse], tags=['Market Holidays'])
 @limiter.limit(rate_limit)
 def get_market_holidays(request: Request,
                         mic: str = Query(None, title="MIC code", description="Specify comma separated list of MIC codes for which market to show data for.", example="XNYS"),
@@ -579,6 +588,10 @@ def get_market_holidays(request: Request,
     return response
 
 
-@app.get("/api/v1/version", response_model=VersionResponse, tags=['Version'])
+@router.get("/api/v1/version", response_model=VersionResponse, tags=['Version'])
 def get_version():
     return {"version": app.version}
+
+
+# Include router with context path
+app.include_router(router)
