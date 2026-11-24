@@ -114,7 +114,7 @@ class Calendar:
 
     def __get_time(self, now, times):
         for i, (datetime, time) in reversed(list(enumerate(times))):
-            if datetime == None or now < datetime.date():
+            if datetime == None or now >= datetime.date():
                 return time
     
         return None

@@ -68,6 +68,31 @@ def test_hours_one_mic(client):
     assert len(response.json()) == 2
 
 
+def test_hours_korea_regular_session_after_1998(client):
+    response = client.get(
+        f"{BASE_PATH}/api/v1/markets/hours?mic=XKRX&start=2026-11-20&end=2026-11-23"
+    )
+    assert response.status_code == 200
+    hours = response.json()
+    assert [row['date'] for row in hours] == ['2026-11-20', '2026-11-23']
+    for row in hours:
+        assert row['open_time'] == f"{row['date']}T09:00:00+09:00"
+        assert row['close_time'] == f"{row['date']}T15:30:00+09:00"
+
+
+def test_hours_hong_kong_modern_session_and_new_york_control(client):
+    response = client.get(
+        f"{BASE_PATH}/api/v1/markets/hours?mic=XHKG,XNYS&start=2026-11-20&end=2026-11-20"
+    )
+    assert response.status_code == 200
+    hours = {row['mic']: row for row in response.json()}
+    assert set(hours) == {'XHKG', 'XNYS'}
+    assert hours['XHKG']['open_time'] == '2026-11-20T09:30:00+08:00'
+    assert hours['XHKG']['close_time'] == '2026-11-20T16:00:00+08:00'
+    assert hours['XNYS']['open_time'] == '2026-11-20T09:30:00-05:00'
+    assert hours['XNYS']['close_time'] == '2026-11-20T16:00:00-05:00'
+
+
 def test_hours_bad_mic(client):
     response = client.get(f"{BASE_PATH}/api/v1/markets/hours?mic=ABCD&start=2024-07-03&end=2024-07-05")
     assert response.status_code == 422
@@ -138,4 +163,3 @@ def test_holidays_get_holiday_name_1(client):
 def test_holidays_get_holiday_name_2(client):
     response = client.get(f"{BASE_PATH}/api/v1/markets/holidays?mic=XKLS&start=2024-01-25&end=2024-01-25")
     assert response.status_code == 200
-    
