@@ -80,6 +80,7 @@ Trading calendar REST API with holiday, late open, and early close. Over 50 uniq
 
 # Context path prefix - similar to Java's server.servlet.context-path
 CONTEXT_PATH = os.environ.get('CONTEXT_PATH', '/cal')
+API_DOCS_ENABLED = os.environ.get('API_DOCS_ENABLED', 'false').strip().lower() == 'true'
 
 limiter = Limiter(key_func=get_remote_address, headers_enabled=True, enabled='RATE_LIMIT' in os.environ)
 app = FastAPI(
@@ -96,9 +97,9 @@ app = FastAPI(
         "url": "https://raw.githubusercontent.com/apptastic-software/trading-calendar/main/LICENSE",
     },
     openapi_tags=tags_metadata,
-    openapi_url=f"{CONTEXT_PATH}/api/v1/openapi.json",
-    docs_url=f"{CONTEXT_PATH}/docs",
-    redoc_url=f"{CONTEXT_PATH}/redoc",
+    openapi_url=f"{CONTEXT_PATH}/api/v1/openapi.json" if API_DOCS_ENABLED else None,
+    docs_url=f"{CONTEXT_PATH}/docs" if API_DOCS_ENABLED else None,
+    redoc_url=f"{CONTEXT_PATH}/redoc" if API_DOCS_ENABLED else None,
     lifespan=lifespan
 )
 app.state.limiter = limiter
