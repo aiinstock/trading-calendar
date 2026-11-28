@@ -42,6 +42,8 @@ spec:
         env:
         - name: CONTEXT_PATH
           value: "/cal"
+        - name: API_DOCS_ENABLED
+          value: "false"
         - name: RATE_LIMIT
           value: "50000"
         - name: MAX_DAYS
